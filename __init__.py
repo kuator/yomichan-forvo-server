@@ -16,6 +16,8 @@ from typing import List
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
+import cloudscraper
+
 
 # Config default values
 @dataclass
@@ -38,7 +40,8 @@ class Forvo():
     _AUDIO_HTTP_HOST = "https://audio12.forvo.com"
     def __init__(self, config=_forvo_config):
         self.config = config
-        self._set_session()
+        # self._set_session()
+        self.scraper = cloudscraper.create_scraper(delay=10,   browser={'custom': 'ScraperBot/1.0',})
 
     def _set_session(self):
         """
@@ -69,11 +72,13 @@ class Forvo():
         """
         url = self._SERVER_HOST + path
         try:
-            return self.session.get(url, timeout=10).text
+            # return self.session.get(url, timeout=10).text
+            return self.scraper.get(url).text
 
         except Exception:
             self._set_session()
-            return self.session.get(url, timeout=10).text
+            return self.scraper.get(url, timeout=10).text
+            # return self.session.get(url, timeout=10).text
 
     def word(self, w):
         """
@@ -84,7 +89,8 @@ class Forvo():
             return []
         path = f"/word/{w}/"
         html = self._get(path)
-        soup = BeautifulSoup(html, features="html.parser")
+        # soup = BeautifulSoup(html, features="html.parser")
+        soup = BeautifulSoup(html, 'lxml')
 
         # Forvo's word page returns multiple result sets grouped by langauge like:
         # <div id="language-container-ja">
@@ -246,7 +252,7 @@ class ForvoHandler(http.server.SimpleHTTPRequestHandler):
         # Ref: https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/custom-audio-list-schema.json
         resp = {
             "type": "audioSourceList",
-            "audioSources": audio_sources
+            "audioSources": audio_sources,
         }
 
         # Writing the JSON contents with UTF-8
